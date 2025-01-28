@@ -36,6 +36,13 @@ type EscenarioDetalleClientProps = {
   id: string
 }
 
+type PostgrestError = {
+  code: string
+  message: string
+  details: string
+  hint?: string
+}
+
 export default function EscenarioDetalleClient({ escenario, initialItems, id }: EscenarioDetalleClientProps) {
   const [items, setItems] = useState<Item[]>(initialItems || [])
   const [nuevoItem, setNuevoItem] = useState({
@@ -90,9 +97,13 @@ export default function EscenarioDetalleClient({ escenario, initialItems, id }: 
           esPersonalizado: false,
         })
       }
-    } catch (error) {
+    } catch (error: unknown) {
       console.error("Error al agregar item:", error)
-      setError("Error al agregar el item. Por favor, intenta de nuevo.")
+      if (error instanceof Error) {
+        setError(`Error al agregar el item: ${error.message}`)
+      } else {
+        setError("Error al agregar el item. Por favor, intenta de nuevo.")
+      }
     }
   }
 
@@ -110,9 +121,13 @@ export default function EscenarioDetalleClient({ escenario, initialItems, id }: 
       } else {
         throw new Error("No se pudo actualizar el escenario")
       }
-    } catch (error) {
+    } catch (error: unknown) {
       console.error("Error al guardar:", error)
-      setError("Error al guardar el inventario. Por favor, intenta de nuevo.")
+      if (error instanceof Error) {
+        setError(`Error al guardar el inventario: ${error.message}`)
+      } else {
+        setError("Error al guardar el inventario. Por favor, intenta de nuevo.")
+      }
     } finally {
       setLoading(false)
     }
@@ -125,9 +140,13 @@ export default function EscenarioDetalleClient({ escenario, initialItems, id }: 
       if (error) throw error
 
       setItems((prevItems) => prevItems.filter((item) => item.id !== itemId))
-    } catch (error) {
+    } catch (error: unknown) {
       console.error("Error al eliminar item:", error)
-      setError("Error al eliminar el item. Por favor, intenta de nuevo.")
+      if (error instanceof Error) {
+        setError(`Error al eliminar el item: ${error.message}`)
+      } else {
+        setError("Error al eliminar el item. Por favor, intenta de nuevo.")
+      }
     }
   }
 

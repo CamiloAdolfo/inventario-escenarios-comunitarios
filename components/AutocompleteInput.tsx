@@ -30,18 +30,18 @@ export function AutocompleteInput({ options, value, onChange, placeholder, label
     setShowOptions(false)
   }
 
-  const handleClickOutside = useCallback((e: MouseEvent) => {
-    if (inputRef.current && !inputRef.current.contains(e.target as Node)) {
-      setShowOptions(false)
-    }
-  }, [])
-
   useEffect(() => {
+    const handleClickOutside = (e: MouseEvent) => {
+      if (inputRef.current && !inputRef.current.contains(e.target as Node)) {
+        setShowOptions(false)
+      }
+    }
+
     document.addEventListener("click", handleClickOutside)
     return () => {
       document.removeEventListener("click", handleClickOutside)
     }
-  }, [handleClickOutside])
+  }, [])
 
   return (
     <div className="relative" ref={inputRef}>

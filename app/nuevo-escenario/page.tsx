@@ -10,6 +10,12 @@ import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group"
 import { Label } from "@/components/ui/label"
 import { AutocompleteInput } from "@/components/AutocompleteInput"
 
+type SupabaseError = {
+  code: string
+  message: string
+  details: string
+}
+
 type FormData = {
   nombre: string
   comuna: string
@@ -49,7 +55,7 @@ export default function NuevoEscenario() {
     setError(null)
 
     try {
-      const { data: existingEscenario, error: existingError } = await supabase
+      const { error: existingError } = await supabase
         .from("escenarios")
         .select("id")
         .ilike("nombre", formData.nombre)
@@ -57,11 +63,6 @@ export default function NuevoEscenario() {
 
       if (existingError && existingError.code !== "PGRST116") {
         throw existingError
-      }
-
-      if (existingEscenario) {
-        router.push(`/escenario/${existingEscenario.id}`)
-        return
       }
 
       const { error: insertError } = await supabase
@@ -72,9 +73,13 @@ export default function NuevoEscenario() {
       if (insertError) throw insertError
 
       router.push("/")
-    } catch (error) {
+    } catch (error: unknown) {
       console.error("Error al crear escenario:", error)
-      setError("Ha ocurrido un error al crear el escenario. Por favor, intenta de nuevo.")
+      if (error instanceof Error) {
+        setError(`Error al crear el escenario: ${error.message}`)
+      } else {
+        setError("Ha ocurrido un error al crear el escenario. Por favor, intenta de nuevo.")
+      }
     }
   }
 
