@@ -1,6 +1,23 @@
 import { supabase } from "@/lib/supabase"
 import Link from "next/link"
 
+interface Item {
+  id: number
+  nombre: string
+  cantidad: number
+  seccion: string
+}
+
+interface Escenario {
+  id: string
+  nombre: string
+  comuna: string
+  direccion: string
+  barrio: string
+  administrador: string
+  items: Item[]
+}
+
 export default async function AdminPage() {
   const { data: escenarios, error } = await supabase.from("escenarios").select(`
       *,
@@ -22,7 +39,7 @@ export default async function AdminPage() {
       <h1 className="text-2xl font-bold mb-6">Panel de Administrador</h1>
 
       <div className="grid gap-6">
-        {escenarios?.map((escenario) => (
+        {escenarios?.map((escenario: Escenario) => (
           <div key={escenario.id} className="border rounded-lg p-4 bg-white shadow">
             <h2 className="text-xl font-semibold mb-4">{escenario.nombre}</h2>
 
@@ -52,8 +69,8 @@ export default async function AdminPage() {
                     <h4 className="font-medium text-sm mb-1">Inmuebles</h4>
                     <div className="text-sm">
                       {escenario.items
-                        ?.filter((item) => item.seccion === "Inmuebles")
-                        .map((item) => (
+                        ?.filter((item: Item) => item.seccion === "Inmuebles")
+                        .map((item: Item) => (
                           <p key={item.id}>
                             {item.nombre}: {item.cantidad}
                           </p>
@@ -64,8 +81,8 @@ export default async function AdminPage() {
                     <h4 className="font-medium text-sm mb-1">Muebles</h4>
                     <div className="text-sm">
                       {escenario.items
-                        ?.filter((item) => item.seccion === "Muebles")
-                        .map((item) => (
+                        ?.filter((item: Item) => item.seccion === "Muebles")
+                        .map((item: Item) => (
                           <p key={item.id}>
                             {item.nombre}: {item.cantidad}
                           </p>
