@@ -3,7 +3,8 @@ import { supabase } from "../lib/supabase"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 
-export const revalidate = 0 // Deshabilita la caché
+export const dynamic = "force-dynamic"
+export const revalidate = 0
 
 export default async function Home() {
   try {
@@ -15,6 +16,12 @@ export default async function Home() {
     if (error) {
       console.error("Error fetching escenarios:", error)
       throw error
+    }
+
+    if (!escenarios || escenarios.length === 0) {
+      console.log("No se encontraron escenarios")
+    } else {
+      console.log("Escenarios encontrados:", escenarios.length)
     }
 
     return (
@@ -31,22 +38,26 @@ export default async function Home() {
           <Input type="search" placeholder="Buscar escenario..." className="max-w-md" />
         </div>
 
-        <div className="grid grid-cols-1 gap-4">
-          {escenarios?.map((escenario) => (
-            <Link
-              href={`/escenario/${escenario.id}`}
-              key={escenario.id}
-              className="block border p-4 rounded-lg hover:bg-gray-50 transition-colors"
-            >
-              <h2 className="text-xl font-semibold mb-2">{escenario.nombre}</h2>
-              <div className="text-sm text-gray-600">
-                <p>Comuna: {escenario.comuna}</p>
-                <p>Dirección: {escenario.direccion}</p>
-                <p>Barrio: {escenario.barrio}</p>
-              </div>
-            </Link>
-          ))}
-        </div>
+        {escenarios && escenarios.length > 0 ? (
+          <div className="grid grid-cols-1 gap-4">
+            {escenarios.map((escenario) => (
+              <Link
+                href={`/escenario/${escenario.id}`}
+                key={escenario.id}
+                className="block border p-4 rounded-lg hover:bg-gray-50 transition-colors"
+              >
+                <h2 className="text-xl font-semibold mb-2">{escenario.nombre}</h2>
+                <div className="text-sm text-gray-600">
+                  <p>Comuna: {escenario.comuna}</p>
+                  <p>Dirección: {escenario.direccion}</p>
+                  <p>Barrio: {escenario.barrio}</p>
+                </div>
+              </Link>
+            ))}
+          </div>
+        ) : (
+          <div className="text-center text-gray-500">No hay escenarios disponibles</div>
+        )}
       </div>
     )
   } catch (error) {
