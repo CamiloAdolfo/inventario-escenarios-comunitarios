@@ -8,10 +8,8 @@ export const revalidate = 0
 
 export default async function Home() {
   try {
-    const { data: escenarios, error } = await supabase
-      .from("escenarios")
-      .select("*")
-      .order("created_at", { ascending: false })
+    // Cambiamos el orden para usar 'id' en lugar de 'created_at'
+    const { data: escenarios, error } = await supabase.from("escenarios").select("*").order("id", { ascending: false })
 
     if (error) {
       console.error("Error fetching escenarios:", error)
