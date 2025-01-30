@@ -127,10 +127,10 @@ export default function EscenarioDetalleClient({ escenario, initialItems, id }: 
       <div className="flex justify-between items-center mb-6">
         <h1 className="text-2xl font-bold">{escenario.nombre}</h1>
         <div className="space-x-2">
-          <Button variant="outline" onClick={() => setIsEditing(!isEditing)}>
+          <Button className="bg-[#1e2c4f] hover:bg-[#2a3c6f] text-white" onClick={() => setIsEditing(!isEditing)}>
             {isEditing ? "Cancelar Edición" : "Editar"}
           </Button>
-          <Button variant="outline" onClick={() => router.push("/")}>
+          <Button className="bg-[#1e2c4f] hover:bg-[#2a3c6f] text-white" onClick={() => router.push("/")}>
             Volver
           </Button>
         </div>
