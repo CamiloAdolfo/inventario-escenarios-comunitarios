@@ -41,7 +41,7 @@ export function AutocompleteInput({ options, value, onChange, placeholder, label
     return () => {
       document.removeEventListener("click", handleClickOutside)
     }
-  }, []) // Removed handleClickOutside from dependencies
+  }, [handleClickOutside]) // Added handleClickOutside to dependencies
 
   return (
     <div className="relative" ref={inputRef}>
