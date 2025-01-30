@@ -1,5 +1,5 @@
 import type React from "react"
-import { useState, useEffect, useRef, useCallback } from "react"
+import { useState, useEffect, useRef } from "react"
 import { Input } from "@/components/ui/input"
 
 interface AutocompleteInputProps {
@@ -30,18 +30,18 @@ export function AutocompleteInput({ options, value, onChange, placeholder, label
     setShowOptions(false)
   }
 
-  useEffect(() => {
-    const handleClickOutside = (e: MouseEvent) => {
-      if (inputRef.current && !inputRef.current.contains(e.target as Node)) {
-        setShowOptions(false)
-      }
+  const handleClickOutside = (e: MouseEvent) => {
+    if (inputRef.current && !inputRef.current.contains(e.target as Node)) {
+      setShowOptions(false)
     }
+  }
 
+  useEffect(() => {
     document.addEventListener("click", handleClickOutside)
     return () => {
       document.removeEventListener("click", handleClickOutside)
     }
-  }, [])
+  }, []) // Removed handleClickOutside from dependencies
 
   return (
     <div className="relative" ref={inputRef}>

@@ -10,27 +10,8 @@ import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group"
 import { Label } from "@/components/ui/label"
 import { AutocompleteInput } from "@/components/AutocompleteInput"
 
-type SupabaseError = {
-  code: string
-  message: string
-  details: string
-}
-
-type FormData = {
-  nombre: string
-  comuna: string
-  susceptible_administracion: string
-  direccion: string
-  barrio: string
-  georeferenciacion: string
-  entidad_administra: string
-  administrador: string
-  celular: string
-  email: string
-}
-
 export default function NuevoEscenario() {
-  const [formData, setFormData] = useState<FormData>({
+  const [formData, setFormData] = useState({
     nombre: "",
     comuna: "",
     susceptible_administracion: "",
@@ -42,44 +23,42 @@ export default function NuevoEscenario() {
     celular: "",
     email: "",
   })
-
   const [error, setError] = useState<string | null>(null)
   const router = useRouter()
 
-  const handleChange = (name: keyof FormData, value: string) => {
+  const handleChange = (name: string, value: string) => {
     setFormData({ ...formData, [name]: value })
   }
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     setError(null)
-
     try {
-      const { error: existingError } = await supabase
+      // Verificar si ya existe un escenario con el mismo nombre
+      const { data: existingEscenario } = await supabase
         .from("escenarios")
         .select("id")
         .ilike("nombre", formData.nombre)
         .single()
 
-      if (existingError && existingError.code !== "PGRST116") {
-        throw existingError
+      if (existingEscenario) {
+        // Si existe, redirigir a ese escenario
+        router.push(`/escenario/${existingEscenario.id}`)
+        return
       }
 
-      const { error: insertError } = await supabase
+      // Si no existe, crear nuevo
+      const { data, error: supabaseError } = await supabase
         .from("escenarios")
         .insert([{ ...formData, estado: "pendiente" }])
         .select()
 
-      if (insertError) throw insertError
+      if (supabaseError) throw supabaseError
 
       router.push("/")
-    } catch (error: unknown) {
+    } catch (error: any) {
       console.error("Error al crear escenario:", error)
-      if (error instanceof Error) {
-        setError(`Error al crear el escenario: ${error.message}`)
-      } else {
-        setError("Ha ocurrido un error al crear el escenario. Por favor, intenta de nuevo.")
-      }
+      setError(error.message || "Ha ocurrido un error al crear el escenario")
     }
   }
 
@@ -100,7 +79,6 @@ export default function NuevoEscenario() {
           placeholder="Nombre del escenario"
           label="Nombre del Escenario"
         />
-
         <AutocompleteInput
           options={COMUNAS}
           value={formData.comuna}
@@ -108,7 +86,6 @@ export default function NuevoEscenario() {
           placeholder="Comuna"
           label="Comuna"
         />
-
         <div>
           <label className="block text-sm font-medium text-gray-700 mb-2">Susceptible De Administración</label>
           <RadioGroup
@@ -125,7 +102,6 @@ export default function NuevoEscenario() {
             </div>
           </RadioGroup>
         </div>
-
         <Input
           type="text"
           id="direccion"
@@ -136,7 +112,6 @@ export default function NuevoEscenario() {
           className="mt-1 block w-full"
           required
         />
-
         <AutocompleteInput
           options={BARRIOS}
           value={formData.barrio}
@@ -144,7 +119,6 @@ export default function NuevoEscenario() {
           placeholder="Barrio"
           label="Barrio"
         />
-
         {["georeferenciacion", "entidad_administra", "administrador", "celular", "email"].map((field) => (
           <div key={field}>
             <label htmlFor={field} className="block text-sm font-medium text-gray-700">
@@ -155,7 +129,7 @@ export default function NuevoEscenario() {
               id={field}
               name={field}
               value={formData[field as keyof typeof formData]}
-              onChange={(e) => handleChange(field as keyof typeof formData, e.target.value)}
+              onChange={(e) => handleChange(field, e.target.value)}
               className="mt-1 block w-full"
               required
             />

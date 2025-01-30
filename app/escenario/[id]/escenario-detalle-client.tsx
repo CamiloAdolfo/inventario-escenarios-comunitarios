@@ -16,31 +16,11 @@ type Item = {
   seccion: string
 }
 
-type Escenario = {
-  id: string
-  nombre: string
-  comuna: string
-  direccion: string
-  barrio: string
-  susceptible_administracion: string
-  georeferenciacion: string
-  entidad_administra: string
-  administrador: string
-  celular: string
-  email: string
-}
-
 type EscenarioDetalleClientProps = {
-  escenario: Escenario
+  escenario: any
   initialItems: Item[]
   id: string
-}
-
-type PostgrestError = {
-  code: string
-  message: string
-  details: string
-  hint?: string
+  estado?: string
 }
 
 export default function EscenarioDetalleClient({ escenario, initialItems, id }: EscenarioDetalleClientProps) {
@@ -97,13 +77,9 @@ export default function EscenarioDetalleClient({ escenario, initialItems, id }: 
           esPersonalizado: false,
         })
       }
-    } catch (error: unknown) {
+    } catch (error: any) {
       console.error("Error al agregar item:", error)
-      if (error instanceof Error) {
-        setError(`Error al agregar el item: ${error.message}`)
-      } else {
-        setError("Error al agregar el item. Por favor, intenta de nuevo.")
-      }
+      setError(error.message || "Error al agregar el item. Por favor, intenta de nuevo.")
     }
   }
 
@@ -121,13 +97,9 @@ export default function EscenarioDetalleClient({ escenario, initialItems, id }: 
       } else {
         throw new Error("No se pudo actualizar el escenario")
       }
-    } catch (error: unknown) {
+    } catch (error: any) {
       console.error("Error al guardar:", error)
-      if (error instanceof Error) {
-        setError(`Error al guardar el inventario: ${error.message}`)
-      } else {
-        setError("Error al guardar el inventario. Por favor, intenta de nuevo.")
-      }
+      setError(`Error al guardar el inventario: ${error.message || "Error desconocido"}`)
     } finally {
       setLoading(false)
     }
@@ -140,13 +112,9 @@ export default function EscenarioDetalleClient({ escenario, initialItems, id }: 
       if (error) throw error
 
       setItems((prevItems) => prevItems.filter((item) => item.id !== itemId))
-    } catch (error: unknown) {
+    } catch (error: any) {
       console.error("Error al eliminar item:", error)
-      if (error instanceof Error) {
-        setError(`Error al eliminar el item: ${error.message}`)
-      } else {
-        setError("Error al eliminar el item. Por favor, intenta de nuevo.")
-      }
+      setError(`Error al eliminar el item: ${error.message || "Error desconocido"}`)
     }
   }
 
@@ -173,7 +141,52 @@ export default function EscenarioDetalleClient({ escenario, initialItems, id }: 
           <h2 className="text-xl font-bold mb-4">Información del Escenario</h2>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <Card className="p-4">
-              <div className="space-y-2">{/* Información del escenario */}</div>
+              <div className="space-y-2">
+                <div className="grid grid-cols-[auto,1fr] gap-2">
+                  <span className="font-semibold">Nombre:</span>
+                  <span>{escenario.nombre}</span>
+                </div>
+                <div className="grid grid-cols-[auto,1fr] gap-2">
+                  <span className="font-semibold">Susceptible administracion:</span>
+                  <span>{escenario.susceptible_administracion}</span>
+                </div>
+                <div className="grid grid-cols-[auto,1fr] gap-2">
+                  <span className="font-semibold">Barrio:</span>
+                  <span>{escenario.barrio}</span>
+                </div>
+                <div className="grid grid-cols-[auto,1fr] gap-2">
+                  <span className="font-semibold">Entidad administra:</span>
+                  <span>{escenario.entidad_administra}</span>
+                </div>
+                <div className="grid grid-cols-[auto,1fr] gap-2">
+                  <span className="font-semibold">Celular:</span>
+                  <span>{escenario.celular}</span>
+                </div>
+              </div>
+            </Card>
+            <Card className="p-4">
+              <div className="space-y-2">
+                <div className="grid grid-cols-[auto,1fr] gap-2">
+                  <span className="font-semibold">Comuna:</span>
+                  <span>{escenario.comuna}</span>
+                </div>
+                <div className="grid grid-cols-[auto,1fr] gap-2">
+                  <span className="font-semibold">Direccion:</span>
+                  <span>{escenario.direccion}</span>
+                </div>
+                <div className="grid grid-cols-[auto,1fr] gap-2">
+                  <span className="font-semibold">Georeferenciacion:</span>
+                  <span>{escenario.georeferenciacion}</span>
+                </div>
+                <div className="grid grid-cols-[auto,1fr] gap-2">
+                  <span className="font-semibold">Administrador:</span>
+                  <span>{escenario.administrador}</span>
+                </div>
+                <div className="grid grid-cols-[auto,1fr] gap-2">
+                  <span className="font-semibold">Email:</span>
+                  <span>{escenario.email}</span>
+                </div>
+              </div>
             </Card>
           </div>
         </section>
@@ -233,7 +246,7 @@ export default function EscenarioDetalleClient({ escenario, initialItems, id }: 
                           type="number"
                           min="1"
                           value={nuevoItem.cantidad}
-                          onChange={(e) => setNuevoItem({ ...nuevoItem, cantidad: Number(e.target.value) })}
+                          onChange={(e) => setNuevoItem({ ...nuevoItem, cantidad: Number.parseInt(e.target.value) })}
                         />
                       </div>
 
@@ -243,6 +256,21 @@ export default function EscenarioDetalleClient({ escenario, initialItems, id }: 
                     </>
                   )}
                 </div>
+
+                {nuevoItem.seccion && (
+                  <div className="mt-4 flex items-center gap-2">
+                    <input
+                      type="checkbox"
+                      id="esPersonalizado"
+                      checked={nuevoItem.esPersonalizado}
+                      onChange={(e) => setNuevoItem({ ...nuevoItem, esPersonalizado: e.target.checked })}
+                      className="rounded border-gray-300"
+                    />
+                    <label htmlFor="esPersonalizado" className="text-sm">
+                      Agregar item personalizado
+                    </label>
+                  </div>
+                )}
               </form>
             </Card>
           </section>
