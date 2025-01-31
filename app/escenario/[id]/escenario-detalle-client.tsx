@@ -1,9 +1,9 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { useRouter } from "next/navigation"
-import { supabase } from "@/lib/supabase"
-import { INMUEBLES, MUEBLES } from "@/lib/constants"
+import { supabase, initializeDatabase } from "@/lib/supabase"
+import { getItemsDisponibles } from "@/lib/constants"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Input } from "@/components/ui/input"
 import { Button } from "@/components/ui/button"
@@ -14,6 +14,7 @@ type Item = {
   nombre: string
   cantidad: number
   seccion: string
+  estado: string
 }
 
 type EscenarioDetalleClientProps = {
@@ -29,30 +30,86 @@ export default function EscenarioDetalleClient({ escenario, initialItems, id }: 
     seccion: "",
     nombre: "",
     cantidad: 1,
+    estado: "",
     esPersonalizado: false,
   })
   const [itemsDisponibles, setItemsDisponibles] = useState<string[]>([])
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [isEditing, setIsEditing] = useState(false)
+  const [isEditingInfo, setIsEditingInfo] = useState(false)
+  const [escenarioState, setEscenario] = useState(escenario)
   const router = useRouter()
 
-  const handleSeccionChange = (seccion: string) => {
+  useEffect(() => {
+    initializeDatabase()
+  }, [])
+
+  const actualizarItemsDisponibles = async (seccion: string) => {
+    try {
+      const items = await getItemsDisponibles(seccion)
+      setItemsDisponibles(items)
+    } catch (error) {
+      console.error("Error al cargar items disponibles:", error)
+    }
+  }
+
+  const handleSeccionChange = async (seccion: string) => {
     setNuevoItem((prevItem) => ({
       ...prevItem,
       seccion,
       nombre: "",
       esPersonalizado: false,
+      estado: "",
     }))
-    setItemsDisponibles(seccion === "Inmuebles" ? INMUEBLES : MUEBLES)
+    await actualizarItemsDisponibles(seccion)
   }
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     setError(null)
+    setLoading(true)
 
     try {
-      const { data, error: supabaseError } = await supabase
+      if (nuevoItem.esPersonalizado) {
+        const { data: existingItem, error: checkError } = await supabase
+          .from("items_disponibles")
+          .select()
+          .eq("nombre", nuevoItem.nombre)
+          .eq("seccion", nuevoItem.seccion)
+          .single()
+
+        if (checkError && checkError.code !== "PGRST116") {
+          console.error("Error al verificar item existente:", checkError)
+          throw checkError
+        }
+
+        if (!existingItem) {
+          const { data: newItem, error: insertError } = await supabase
+            .from("items_disponibles")
+            .insert([
+              {
+                nombre: nuevoItem.nombre,
+                seccion: nuevoItem.seccion,
+              },
+            ])
+            .select()
+            .single()
+
+          if (insertError) {
+            console.error("Error al insertar item personalizado:", insertError)
+            throw insertError
+          }
+
+          console.log("Item personalizado insertado:", newItem)
+        } else {
+          console.log("Item personalizado ya existe:", existingItem)
+        }
+
+        await actualizarItemsDisponibles(nuevoItem.seccion)
+      }
+
+      const { data: newItemData, error: itemError } = await supabase
         .from("items")
         .insert([
           {
@@ -60,26 +117,34 @@ export default function EscenarioDetalleClient({ escenario, initialItems, id }: 
             seccion: nuevoItem.seccion,
             nombre: nuevoItem.nombre,
             cantidad: nuevoItem.cantidad,
+            estado: nuevoItem.estado,
           },
         ])
         .select()
 
-      if (supabaseError) {
-        throw supabaseError
+      if (itemError) {
+        console.error("Error al insertar item en la tabla items:", itemError)
+        throw itemError
       }
 
-      if (data) {
-        setItems((prevItems) => [...prevItems, ...data])
+      if (newItemData) {
+        console.log("Nuevo item agregado:", newItemData)
+        setItems((prevItems) => [...prevItems, ...newItemData])
         setNuevoItem({
-          seccion: "",
+          seccion: nuevoItem.seccion,
           nombre: "",
           cantidad: 1,
+          estado: "",
           esPersonalizado: false,
         })
+
+        setItemsDisponibles((prevItems) => Array.from(new Set([...prevItems, nuevoItem.nombre])))
       }
     } catch (error: any) {
       console.error("Error al agregar item:", error)
       setError(error.message || "Error al agregar el item. Por favor, intenta de nuevo.")
+    } finally {
+      setLoading(false)
     }
   }
 
@@ -118,6 +183,27 @@ export default function EscenarioDetalleClient({ escenario, initialItems, id }: 
     }
   }
 
+  const handleSaveInfo = async () => {
+    setLoading(true)
+    setError(null)
+    try {
+      const { data, error } = await supabase.from("escenarios").update(escenarioState).eq("id", id).select()
+
+      if (error) throw error
+
+      if (data) {
+        setEscenario(data[0])
+        setIsEditingInfo(false)
+        alert("Información del escenario actualizada exitosamente")
+      }
+    } catch (error: any) {
+      console.error("Error al actualizar la información del escenario:", error)
+      setError(`Error al actualizar la información: ${error.message || "Error desconocido"}`)
+    } finally {
+      setLoading(false)
+    }
+  }
+
   if (!escenario) {
     return <div>Cargando...</div>
   }
@@ -138,57 +224,136 @@ export default function EscenarioDetalleClient({ escenario, initialItems, id }: 
 
       <div className="space-y-6">
         <section>
-          <h2 className="text-xl font-bold mb-4">Información del Escenario</h2>
+          <div className="flex justify-between items-center mb-4">
+            <h2 className="text-xl font-bold">Información del Escenario</h2>
+            <Button
+              className="bg-[#1e2c4f] hover:bg-[#2a3c6f] text-white"
+              onClick={() => setIsEditingInfo(!isEditingInfo)}
+            >
+              {isEditingInfo ? "Cancelar" : "Editar Escenario"}
+            </Button>
+          </div>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <Card className="p-4">
               <div className="space-y-2">
-                <div className="grid grid-cols-[auto,1fr] gap-2">
-                  <span className="font-semibold">Nombre:</span>
-                  <span>{escenario.nombre}</span>
-                </div>
-                <div className="grid grid-cols-[auto,1fr] gap-2">
-                  <span className="font-semibold">Susceptible administracion:</span>
-                  <span>{escenario.susceptible_administracion}</span>
-                </div>
-                <div className="grid grid-cols-[auto,1fr] gap-2">
-                  <span className="font-semibold">Barrio:</span>
-                  <span>{escenario.barrio}</span>
-                </div>
-                <div className="grid grid-cols-[auto,1fr] gap-2">
-                  <span className="font-semibold">Entidad administra:</span>
-                  <span>{escenario.entidad_administra}</span>
-                </div>
-                <div className="grid grid-cols-[auto,1fr] gap-2">
-                  <span className="font-semibold">Celular:</span>
-                  <span>{escenario.celular}</span>
-                </div>
+                {isEditingInfo ? (
+                  <>
+                    <Input
+                      value={escenarioState.nombre}
+                      onChange={(e) => setEscenario({ ...escenarioState, nombre: e.target.value })}
+                      placeholder="Nombre"
+                    />
+                    <Input
+                      value={escenarioState.susceptible_administracion}
+                      onChange={(e) => setEscenario({ ...escenarioState, susceptible_administracion: e.target.value })}
+                      placeholder="Susceptible administración"
+                    />
+                    <Input
+                      value={escenarioState.barrio}
+                      onChange={(e) => setEscenario({ ...escenarioState, barrio: e.target.value })}
+                      placeholder="Barrio"
+                    />
+                    <Input
+                      value={escenarioState.entidad_administra}
+                      onChange={(e) => setEscenario({ ...escenarioState, entidad_administra: e.target.value })}
+                      placeholder="Entidad administra"
+                    />
+                    <Input
+                      value={escenarioState.celular}
+                      onChange={(e) => setEscenario({ ...escenarioState, celular: e.target.value })}
+                      placeholder="Celular"
+                    />
+                  </>
+                ) : (
+                  <>
+                    <div className="grid grid-cols-[auto,1fr] gap-2">
+                      <span className="font-semibold">Nombre:</span>
+                      <span>{escenarioState.nombre}</span>
+                    </div>
+                    <div className="grid grid-cols-[auto,1fr] gap-2">
+                      <span className="font-semibold">Susceptible administracion:</span>
+                      <span>{escenarioState.susceptible_administracion}</span>
+                    </div>
+                    <div className="grid grid-cols-[auto,1fr] gap-2">
+                      <span className="font-semibold">Barrio:</span>
+                      <span>{escenarioState.barrio}</span>
+                    </div>
+                    <div className="grid grid-cols-[auto,1fr] gap-2">
+                      <span className="font-semibold">Entidad administra:</span>
+                      <span>{escenarioState.entidad_administra}</span>
+                    </div>
+                    <div className="grid grid-cols-[auto,1fr] gap-2">
+                      <span className="font-semibold">Celular:</span>
+                      <span>{escenarioState.celular}</span>
+                    </div>
+                  </>
+                )}
               </div>
             </Card>
             <Card className="p-4">
               <div className="space-y-2">
-                <div className="grid grid-cols-[auto,1fr] gap-2">
-                  <span className="font-semibold">Comuna:</span>
-                  <span>{escenario.comuna}</span>
-                </div>
-                <div className="grid grid-cols-[auto,1fr] gap-2">
-                  <span className="font-semibold">Direccion:</span>
-                  <span>{escenario.direccion}</span>
-                </div>
-                <div className="grid grid-cols-[auto,1fr] gap-2">
-                  <span className="font-semibold">Georeferenciacion:</span>
-                  <span>{escenario.georeferenciacion}</span>
-                </div>
-                <div className="grid grid-cols-[auto,1fr] gap-2">
-                  <span className="font-semibold">Administrador:</span>
-                  <span>{escenario.administrador}</span>
-                </div>
-                <div className="grid grid-cols-[auto,1fr] gap-2">
-                  <span className="font-semibold">Email:</span>
-                  <span>{escenario.email}</span>
-                </div>
+                {isEditingInfo ? (
+                  <>
+                    <Input
+                      value={escenarioState.comuna}
+                      onChange={(e) => setEscenario({ ...escenarioState, comuna: e.target.value })}
+                      placeholder="Comuna"
+                    />
+                    <Input
+                      value={escenarioState.direccion}
+                      onChange={(e) => setEscenario({ ...escenarioState, direccion: e.target.value })}
+                      placeholder="Dirección"
+                    />
+                    <Input
+                      value={escenarioState.georeferenciacion}
+                      onChange={(e) => setEscenario({ ...escenarioState, georeferenciacion: e.target.value })}
+                      placeholder="Georeferenciación"
+                    />
+                    <Input
+                      value={escenarioState.administrador}
+                      onChange={(e) => setEscenario({ ...escenarioState, administrador: e.target.value })}
+                      placeholder="Administrador"
+                    />
+                    <Input
+                      value={escenarioState.email}
+                      onChange={(e) => setEscenario({ ...escenarioState, email: e.target.value })}
+                      placeholder="Email"
+                    />
+                  </>
+                ) : (
+                  <>
+                    <div className="grid grid-cols-[auto,1fr] gap-2">
+                      <span className="font-semibold">Comuna:</span>
+                      <span>{escenarioState.comuna}</span>
+                    </div>
+                    <div className="grid grid-cols-[auto,1fr] gap-2">
+                      <span className="font-semibold">Direccion:</span>
+                      <span>{escenarioState.direccion}</span>
+                    </div>
+                    <div className="grid grid-cols-[auto,1fr] gap-2">
+                      <span className="font-semibold">Georeferenciacion:</span>
+                      <span>{escenarioState.georeferenciacion}</span>
+                    </div>
+                    <div className="grid grid-cols-[auto,1fr] gap-2">
+                      <span className="font-semibold">Administrador:</span>
+                      <span>{escenarioState.administrador}</span>
+                    </div>
+                    <div className="grid grid-cols-[auto,1fr] gap-2">
+                      <span className="font-semibold">Email:</span>
+                      <span>{escenarioState.email}</span>
+                    </div>
+                  </>
+                )}
               </div>
             </Card>
           </div>
+          {isEditingInfo && (
+            <div className="mt-4 flex justify-end">
+              <Button onClick={handleSaveInfo} className="bg-[#1e2c4f] hover:bg-[#2a3c6f] text-white">
+                Guardar Cambios
+              </Button>
+            </div>
+          )}
         </section>
 
         {isEditing && (
@@ -249,7 +414,22 @@ export default function EscenarioDetalleClient({ escenario, initialItems, id }: 
                           onChange={(e) => setNuevoItem({ ...nuevoItem, cantidad: Number.parseInt(e.target.value) })}
                         />
                       </div>
-
+                      <div>
+                        <label className="block text-sm font-medium mb-1">Estado</label>
+                        <Select
+                          value={nuevoItem.estado}
+                          onValueChange={(value) => setNuevoItem({ ...nuevoItem, estado: value })}
+                        >
+                          <SelectTrigger>
+                            <SelectValue placeholder="Seleccione estado" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="Bueno">Bueno</SelectItem>
+                            <SelectItem value="Regular">Regular</SelectItem>
+                            <SelectItem value="Malo">Malo</SelectItem>
+                          </SelectContent>
+                        </Select>
+                      </div>
                       <Button type="submit" className="bg-[#1e2c4f] hover:bg-[#2a3c6f]">
                         Agregar Item
                       </Button>
@@ -287,6 +467,7 @@ export default function EscenarioDetalleClient({ escenario, initialItems, id }: 
                     <div>
                       <h3 className="font-semibold">{item.nombre}</h3>
                       <p className="text-sm text-gray-600">Cantidad: {item.cantidad}</p>
+                      <p className="text-sm text-gray-600">Estado: {item.estado}</p>
                     </div>
                     {isEditing && (
                       <Button variant="destructive" size="sm" onClick={() => handleRemoveItem(item.id)}>
@@ -310,6 +491,7 @@ export default function EscenarioDetalleClient({ escenario, initialItems, id }: 
                     <div>
                       <h3 className="font-semibold">{item.nombre}</h3>
                       <p className="text-sm text-gray-600">Cantidad: {item.cantidad}</p>
+                      <p className="text-sm text-gray-600">Estado: {item.estado}</p>
                     </div>
                     {isEditing && (
                       <Button variant="destructive" size="sm" onClick={() => handleRemoveItem(item.id)}>
