@@ -1,46 +1,51 @@
+import { supabase } from "./supabase"
+
+// Puedes agregar nuevos inmuebles directamente a este array
+// Mantén el orden alfabético para facilitar la búsqueda
 export const INMUEBLES = [
   "Accesos",
   "Baños",
   "Biosaludables",
   "Calistenia",
   "Camerinos",
+  "Cancha De Baloncesto",
+  "Cancha De Tenis",
+  "Cancha De Voley Playa",
   "Cancha Fútbol",
   "Cancha Múltiple",
-  "Cancha De Tenis",
   "Cancha Sintética",
   "Cerramiento",
+  "Coliseo",
+  "Edificación",
+  "Encerramiento",
+  "Gimnasio",
   "Gradería (Metálica/Concreto)",
+  "Huerta",
   "Juegos Infantiles",
   "Juegos Primera Infancia",
   "Pantallas De Protección",
-  "Pista De Patinaje",
   "Piscina Niños",
   "Piscinas Adultos",
+  "Pista De Patinaje",
+  "Pista De Trote",
   "Salón Múltiple - Kiosko",
   "Vestier",
-  "Encerramiento",
-  "Bodegas",
-  "Gimnasio",
-  "Huerta",
-  "Cancha De Baloncesto",
-  "Coliseo",
-  "Edificación",
-  "Pista De Trote",
-  "Cancha De Voley Playa",
+  // Para agregar un nuevo inmueble, simplemente añade una nueva línea aquí
+  // siguiendo el formato: "Nombre Del Inmueble",
 ]
 
 export const MUEBLES = [
-  "Guadaña",
-  "Podadora",
+  "Bomba",
   "Canecas De Basura",
   "Computadores",
   "Escritorios",
-  "Sillas Rimax",
-  "Otras Sillas",
+  "Guadaña",
   "Manguera",
-  "Pozo",
-  "Bomba",
   "Motores De Piscina",
+  "Otras Sillas",
+  "Podadora",
+  "Pozo",
+  "Sillas Rimax",
 ]
 
 export const COMUNAS = [
@@ -296,4 +301,32 @@ export const ESCENARIOS_DEPORTIVOS = [
   "Polideportivo Eduardo Vargas (El Vallado)",
   "Unidad Recreativa El Vallado",
 ]
+
+export async function getItemsDisponibles(seccion: string) {
+  try {
+    // Primero intentamos obtener los items personalizados
+    const { data: customItems, error } = await supabase
+      .from("items_disponibles")
+      .select("nombre")
+      .eq("seccion", seccion)
+
+    if (error) {
+      console.error("Error al obtener items personalizados:", error)
+      throw error
+    }
+
+    const customItemNames = customItems?.map((item) => item.nombre) || []
+    const predefinedItems = seccion === "Inmuebles" ? INMUEBLES : MUEBLES
+
+    // Combinar items predefinidos con items personalizados, eliminando duplicados
+    const combinedItems = Array.from(new Set([...predefinedItems, ...customItemNames]))
+
+    // Ordenar alfabéticamente
+    return combinedItems.sort()
+  } catch (error) {
+    console.error("Error en getItemsDisponibles:", error)
+    // En caso de error, devolver al menos los items predefinidos
+    return seccion === "Inmuebles" ? INMUEBLES : MUEBLES
+  }
+}
 
