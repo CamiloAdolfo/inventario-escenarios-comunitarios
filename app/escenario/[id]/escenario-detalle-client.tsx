@@ -8,6 +8,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Input } from "@/components/ui/input"
 import { Button } from "@/components/ui/button"
 import { Card } from "@/components/ui/card"
+import { GeoLocation } from "@/components/GeoLocation"
 
 type Item = {
   id: number
@@ -304,11 +305,15 @@ export default function EscenarioDetalleClient({ escenario, initialItems, id }: 
                       onChange={(e) => setEscenario({ ...escenarioState, direccion: e.target.value })}
                       placeholder="Dirección"
                     />
-                    <Input
-                      value={escenarioState.georeferenciacion}
-                      onChange={(e) => setEscenario({ ...escenarioState, georeferenciacion: e.target.value })}
-                      placeholder="Georeferenciación"
-                    />
+                    <div>
+                      <label className="block text-sm font-medium mb-1">Georeferenciación</label>
+                      <GeoLocation
+                        initialValue={escenarioState.georeferenciacion}
+                        onLocationSelect={(location) =>
+                          setEscenario({ ...escenarioState, georeferenciacion: location })
+                        }
+                      />
+                    </div>
                     <Input
                       value={escenarioState.administrador}
                       onChange={(e) => setEscenario({ ...escenarioState, administrador: e.target.value })}
@@ -395,11 +400,17 @@ export default function EscenarioDetalleClient({ escenario, initialItems, id }: 
                               <SelectValue placeholder="Seleccione item" />
                             </SelectTrigger>
                             <SelectContent>
-                              {itemsDisponibles.map((item) => (
-                                <SelectItem key={item} value={item}>
-                                  {item}
+                              {itemsDisponibles.length > 0 ? (
+                                itemsDisponibles.map((item) => (
+                                  <SelectItem key={item} value={item}>
+                                    {item}
+                                  </SelectItem>
+                                ))
+                              ) : (
+                                <SelectItem value="no_items" disabled>
+                                  No hay items disponibles
                                 </SelectItem>
-                              ))}
+                              )}
                             </SelectContent>
                           </Select>
                         )}

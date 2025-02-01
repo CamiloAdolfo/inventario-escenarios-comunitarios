@@ -4,53 +4,46 @@ import { supabase } from "./supabase"
 // Mantén el orden alfabético para facilitar la búsqueda
 export const INMUEBLES = [
   "Accesos",
-"Accesibilidad PMR",
-"Baños",
-"Biosaludables",
-"Calistenia",
-"Camerinos",
-"Cancha De Baloncesto",
-"Cancha De Tenis",
-"Cancha De Voley Playa",
-"Cancha Fútbol",
-"Cancha Múltiple",
-"Cancha Sintética",
-"Cerramiento",
-"Coliseo",
-"Edificación",
-"Encerramiento",
-"Gimnasio",
-"Gradería (Metálica/Concreto)",
-"Huerta",
-"Juegos Infantiles",
-"Juegos Primera Infancia",
-"Pantallas De Protección",
-"Piscina Niños",
-"Piscinas Adultos",
-"Pista De Patinaje",
-"Pista De Trote",
-"Pista De Parkour",
-"Pista De Skate",
-"Pista De BMX",
-"Salón Múltiple - Kiosko",
-"Vestier",
-"Bodegas",
-"Pozo",
-"Motores De Piscina",
-  // Para agregar un nuevo inmueble, simplemente añade una nueva línea aquí
-  // siguiendo el formato: "Nombre Del Inmueble",
-]
+  "Baños",
+  "Biosaludables",
+  "Calistenia",
+  "Camerinos",
+  "Cancha De Baloncesto",
+  "Cancha De Tenis",
+  "Cancha De Voley Playa",
+  "Cancha Fútbol",
+  "Cancha Múltiple",
+  "Cancha Sintética",
+  "Cerramiento",
+  "Coliseo",
+  "Edificación",
+  "Encerramiento",
+  "Gimnasio",
+  "Gradería (Metálica/Concreto)",
+  "Huerta",
+  "Juegos Infantiles",
+  "Juegos Primera Infancia",
+  "Pantallas De Protección",
+  "Piscina Niños",
+  "Piscinas Adultos",
+  "Pista De Patinaje",
+  "Pista De Trote",
+  "Salón Múltiple - Kiosko",
+  "Vestier",
+].filter((item) => item && item.trim() !== "") // Esto eliminará cualquier valor vacío o solo espacios
 
 export const MUEBLES = [
   "Bomba",
-"Canecas De Basura",
-"Computadores",
-"Escritorios",
-"Guadaña",
-"Manguera",
-"Podadora",
-"Sillas Rimax",
-"Otras Sillas",
+  "Canecas De Basura",
+  "Computadores",
+  "Escritorios",
+  "Guadaña",
+  "Manguera",
+  "Motores De Piscina",
+  "Otras Sillas",
+  "Podadora",
+  "Pozo",
+  "Sillas Rimax",
 ]
 
 export const COMUNAS = [
@@ -203,11 +196,11 @@ export const ESCENARIOS_DEPORTIVOS = [
   "Polideportivo Ciudad Córdoba Sector 1A",
   "Cancha Múltiple Los Cristales",
   "Unidad Recreativa Los Cristales",
-  "Polideportivo Vista Hermosa",
+  "Cancha Múltiple De Vista Hermosa",
   "Cancha Múltiple La Fortuna",
   "Cancha Múltiple La Playita",
   "Cancha Múltiple Urbanización Aguacatal",
-  "Parque Recreativo Villa Del Mar",
+  "Cancha Múltiple Villa Del Mar",
   "Coliseo Celestino Mutis",
   "Coliseo Cubierto Bajo Aguacatal",
   "Parque Recreativo Cousaca",
@@ -253,7 +246,7 @@ export const ESCENARIOS_DEPORTIVOS = [
   "Cancha Fútbol 11 Villa Del Sur",
   "Cancha Múltiple Del Mico San Carlos",
   "Cancha Múltiple Holguín Garcés",
-  "Polideportivo José María Córdoba",
+  "Cancha Múltiple José María Córdoba",
   "Cancha Múltiple Villa Del Sur",
   "Polideportivo La Bombonera",
   "Polideportivo La Esperanza",
@@ -320,18 +313,20 @@ export async function getItemsDisponibles(seccion: string) {
       throw error
     }
 
-    const customItemNames = customItems?.map((item) => item.nombre) || []
+    const customItemNames = customItems?.map((item) => item.nombre).filter(Boolean) || []
     const predefinedItems = seccion === "Inmuebles" ? INMUEBLES : MUEBLES
 
-    // Combinar items predefinidos con items personalizados, eliminando duplicados
-    const combinedItems = Array.from(new Set([...predefinedItems, ...customItemNames]))
+    // Combinar items predefinidos con items personalizados, eliminando duplicados y valores vacíos
+    const combinedItems = Array.from(new Set([...predefinedItems, ...customItemNames])).filter(
+      (item) => item && item.trim() !== "",
+    )
 
     // Ordenar alfabéticamente
     return combinedItems.sort()
   } catch (error) {
     console.error("Error en getItemsDisponibles:", error)
     // En caso de error, devolver al menos los items predefinidos
-    return seccion === "Inmuebles" ? INMUEBLES : MUEBLES
+    return (seccion === "Inmuebles" ? INMUEBLES : MUEBLES).filter((item) => item && item.trim() !== "")
   }
 }
 
