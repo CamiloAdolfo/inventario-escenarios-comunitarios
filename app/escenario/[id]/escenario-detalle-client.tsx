@@ -8,7 +8,18 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Input } from "@/components/ui/input"
 import { Button } from "@/components/ui/button"
 import { Card } from "@/components/ui/card"
-import { GeoLocation } from "@/components/GeoLocation"
+// import { GeoLocation } from "@/components/GeoLocation" // Removed GeoLocation import
+import {
+  AlertDialog,
+  AlertDialogContent,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogCancel,
+  AlertDialogAction,
+} from "@/components/ui/alert-dialog"
+import { InventoryActDownload } from "@/components/InventoryActDownload"
 
 type Item = {
   id: number
@@ -41,6 +52,7 @@ export default function EscenarioDetalleClient({ escenario, initialItems, id }: 
   const [isEditingInfo, setIsEditingInfo] = useState(false)
   const [escenarioState, setEscenario] = useState(escenario)
   const router = useRouter()
+  const [showDownloadDialog, setShowDownloadDialog] = useState(false)
 
   useEffect(() => {
     initializeDatabase()
@@ -158,7 +170,7 @@ export default function EscenarioDetalleClient({ escenario, initialItems, id }: 
       if (error) throw error
 
       if (data) {
-        alert("Inventario guardado exitosamente")
+        setShowDownloadDialog(true)
         setIsEditing(false)
       } else {
         throw new Error("No se pudo actualizar el escenario")
@@ -307,11 +319,11 @@ export default function EscenarioDetalleClient({ escenario, initialItems, id }: 
                     />
                     <div>
                       <label className="block text-sm font-medium mb-1">Georeferenciación</label>
-                      <GeoLocation
-                        initialValue={escenarioState.georeferenciacion}
-                        onLocationSelect={(location) =>
-                          setEscenario({ ...escenarioState, georeferenciacion: location })
-                        }
+                      {/* Replaced GeoLocation component with Input */}
+                      <Input
+                        value={escenarioState.georeferenciacion}
+                        onChange={(e) => setEscenario({ ...escenarioState, georeferenciacion: e.target.value })}
+                        placeholder="Georeferenciación"
                       />
                     </div>
                     <Input
@@ -527,6 +539,24 @@ export default function EscenarioDetalleClient({ escenario, initialItems, id }: 
           <div className="mt-4 bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded relative">{error}</div>
         )}
       </div>
+      <AlertDialog open={showDownloadDialog} onOpenChange={setShowDownloadDialog}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Inventario guardado exitosamente</AlertDialogTitle>
+            <AlertDialogDescription>¿Desea descargar el acta del inventario?</AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>No</AlertDialogCancel>
+            <AlertDialogAction asChild>
+              <InventoryActDownload
+                escenario={escenarioState}
+                items={items}
+                templateUrl="/plantilla_acta_inventario.docx"
+              />
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   )
 }
