@@ -3,22 +3,25 @@
 import { useState } from "react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
+import { Alert, AlertDescription } from "@/components/ui/alert"
+import { MapPin } from "lucide-react"
 
 interface GeoLocationProps {
   onLocationSelect: (location: string) => void
   initialValue?: string
 }
 
-export function GeoLocation({ onLocationSelect, initialValue = "" }: GeoLocationProps) {
+export default function GeoLocation({ onLocationSelect, initialValue = "" }: GeoLocationProps) {
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState("")
+  const [coordinates, setCoordinates] = useState(initialValue)
 
   const getLocation = () => {
     setLoading(true)
     setError("")
 
     if (!navigator.geolocation) {
-      setError("La geolocalización no está soportada en este navegador")
+      setError("Tu navegador no soporta geolocalización")
       setLoading(false)
       return
     }
@@ -27,25 +30,40 @@ export function GeoLocation({ onLocationSelect, initialValue = "" }: GeoLocation
       (position) => {
         const { latitude, longitude } = position.coords
         const googleMapsUrl = `https://maps.google.com/maps?q=${latitude},${longitude}`
+        setCoordinates(googleMapsUrl)
         onLocationSelect(googleMapsUrl)
         setLoading(false)
       },
       (error) => {
-        setError("Error al obtener la ubicación: " + error.message)
+        console.error("Error de geolocalización:", error)
+        let errorMessage = "Error al obtener la ubicación"
+
+        switch (error.code) {
+          case error.PERMISSION_DENIED:
+            errorMessage = "Debes permitir el acceso a la ubicación en tu navegador"
+            break
+          case error.POSITION_UNAVAILABLE:
+            errorMessage = "La información de ubicación no está disponible"
+            break
+          case error.TIMEOUT:
+            errorMessage = "Se agotó el tiempo para obtener la ubicación"
+            break
+        }
+
+        setError(errorMessage)
         setLoading(false)
+      },
+      {
+        enableHighAccuracy: true,
+        timeout: 5000,
+        maximumAge: 0,
       },
     )
   }
 
   const handleManualInput = (value: string) => {
-    // Si el usuario ingresa coordenadas directamente (ej: "3.4516,-76.5320")
-    if (/^-?\d+\.?\d*,-?\d+\.?\d*$/.test(value)) {
-      const googleMapsUrl = `https://maps.google.com/maps?q=${value}`
-      onLocationSelect(googleMapsUrl)
-    } else {
-      // Si es una URL de Google Maps, la usamos directamente
-      onLocationSelect(value)
-    }
+    setCoordinates(value)
+    onLocationSelect(value)
   }
 
   return (
@@ -54,7 +72,7 @@ export function GeoLocation({ onLocationSelect, initialValue = "" }: GeoLocation
         <Input
           type="text"
           placeholder="URL de Google Maps o coordenadas (lat,lng)"
-          defaultValue={initialValue}
+          value={coordinates}
           onChange={(e) => handleManualInput(e.target.value)}
           className="flex-1"
         />
@@ -62,12 +80,17 @@ export function GeoLocation({ onLocationSelect, initialValue = "" }: GeoLocation
           type="button"
           onClick={getLocation}
           disabled={loading}
-          className="bg-[#1e2c4f] hover:bg-[#2a3c6f] text-white"
+          className="bg-[#1e2c4f] hover:bg-[#2a3c6f] text-white flex items-center gap-2"
         >
+          <MapPin className="h-4 w-4" />
           {loading ? "Obteniendo..." : "Obtener Ubicación"}
         </Button>
       </div>
-      {error && <p className="text-sm text-red-500">{error}</p>}
+      {error && (
+        <Alert variant="destructive">
+          <AlertDescription>{error}</AlertDescription>
+        </Alert>
+      )}
     </div>
   )
 }

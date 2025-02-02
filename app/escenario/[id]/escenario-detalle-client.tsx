@@ -8,7 +8,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Input } from "@/components/ui/input"
 import { Button } from "@/components/ui/button"
 import { Card } from "@/components/ui/card"
-// import { GeoLocation } from "@/components/GeoLocation" // Removed GeoLocation import
+import GeoLocation from "@/components/GeoLocation"
 import {
   AlertDialog,
   AlertDialogContent,
@@ -319,11 +319,11 @@ export default function EscenarioDetalleClient({ escenario, initialItems, id }: 
                     />
                     <div>
                       <label className="block text-sm font-medium mb-1">Georeferenciación</label>
-                      {/* Replaced GeoLocation component with Input */}
-                      <Input
-                        value={escenarioState.georeferenciacion}
-                        onChange={(e) => setEscenario({ ...escenarioState, georeferenciacion: e.target.value })}
-                        placeholder="Georeferenciación"
+                      <GeoLocation
+                        initialValue={escenarioState.georeferenciacion}
+                        onLocationSelect={(location) =>
+                          setEscenario({ ...escenarioState, georeferenciacion: location })
+                        }
                       />
                     </div>
                     <Input

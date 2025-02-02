@@ -30,11 +30,18 @@ export default function Home() {
 
   useEffect(() => {
     fetchEscenarios()
-  }, []) //This line was already correct, no changes needed.  The error message was misleading.
+  }, [])
 
-  const filteredEscenarios = escenarios.filter((escenario) =>
-    escenario.nombre.toLowerCase().includes(searchTerm.toLowerCase()),
-  )
+  // Modificamos la función de filtrado para que sea case-insensitive y busque en más campos
+  const filteredEscenarios = escenarios.filter((escenario) => {
+    const searchTermLower = searchTerm.toLowerCase()
+    return (
+      escenario.nombre?.toLowerCase().includes(searchTermLower) ||
+      escenario.comuna?.toLowerCase().includes(searchTermLower) ||
+      escenario.barrio?.toLowerCase().includes(searchTermLower) ||
+      escenario.direccion?.toLowerCase().includes(searchTermLower)
+    )
+  })
 
   return (
     <div className="container mx-auto p-4">
@@ -49,8 +56,8 @@ export default function Home() {
       <div className="mb-6">
         <Input
           type="search"
-          placeholder="Buscar escenario..."
-          className="max-w-md"
+          placeholder="Buscar por nombre, comuna, barrio o dirección..."
+          className="max-w-md w-full"
           value={searchTerm}
           onChange={(e) => setSearchTerm(e.target.value)}
         />
@@ -78,7 +85,7 @@ export default function Home() {
           ))}
         </div>
       ) : (
-        <div className="text-center text-gray-500">No hay escenarios disponibles</div>
+        <div className="text-center text-gray-500">No se encontraron escenarios</div>
       )}
     </div>
   )
