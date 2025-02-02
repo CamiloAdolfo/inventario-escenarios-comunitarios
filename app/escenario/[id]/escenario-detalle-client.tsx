@@ -81,6 +81,13 @@ export default function EscenarioDetalleClient({ escenario, initialItems, id }: 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     setError(null)
+
+    // Validación de campos requeridos
+    if (!nuevoItem.nombre || !nuevoItem.cantidad || !nuevoItem.estado || !nuevoItem.seccion) {
+      setError("Todos los campos son obligatorios: nombre, cantidad y estado")
+      return
+    }
+
     setLoading(true)
 
     try {

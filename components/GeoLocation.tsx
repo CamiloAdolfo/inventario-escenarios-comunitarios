@@ -26,39 +26,53 @@ export default function GeoLocation({ onLocationSelect, initialValue = "" }: Geo
       return
     }
 
-    navigator.geolocation.getCurrentPosition(
-      (position) => {
+    const options = {
+      enableHighAccuracy: true,
+      timeout: 10000,
+      maximumAge: 0,
+    }
+
+    const onSuccess = (position: GeolocationPosition) => {
+      try {
         const { latitude, longitude } = position.coords
         const googleMapsUrl = `https://maps.google.com/maps?q=${latitude},${longitude}`
         setCoordinates(googleMapsUrl)
         onLocationSelect(googleMapsUrl)
+      } catch (err) {
+        console.error("Error al procesar coordenadas:", err)
+        setError("Error al procesar las coordenadas de ubicación")
+      } finally {
         setLoading(false)
-      },
-      (error) => {
-        console.error("Error de geolocalización:", error)
-        let errorMessage = "Error al obtener la ubicación"
+      }
+    }
 
-        switch (error.code) {
-          case error.PERMISSION_DENIED:
-            errorMessage = "Debes permitir el acceso a la ubicación en tu navegador"
-            break
-          case error.POSITION_UNAVAILABLE:
-            errorMessage = "La información de ubicación no está disponible"
-            break
-          case error.TIMEOUT:
-            errorMessage = "Se agotó el tiempo para obtener la ubicación"
-            break
-        }
+    const onError = (error: GeolocationPositionError) => {
+      console.error("Error de geolocalización:", error)
+      let errorMessage = "Error al obtener la ubicación"
 
-        setError(errorMessage)
-        setLoading(false)
-      },
-      {
-        enableHighAccuracy: true,
-        timeout: 5000,
-        maximumAge: 0,
-      },
-    )
+      switch (error.code) {
+        case 1: // PERMISSION_DENIED
+          errorMessage = "Debes permitir el acceso a la ubicación en tu navegador"
+          break
+        case 2: // POSITION_UNAVAILABLE
+          errorMessage = "La información de ubicación no está disponible"
+          break
+        case 3: // TIMEOUT
+          errorMessage = "Se agotó el tiempo para obtener la ubicación"
+          break
+      }
+
+      setError(errorMessage)
+      setLoading(false)
+    }
+
+    try {
+      navigator.geolocation.getCurrentPosition(onSuccess, onError, options)
+    } catch (err) {
+      console.error("Error al solicitar geolocalización:", err)
+      setError("Error al solicitar la ubicación")
+      setLoading(false)
+    }
   }
 
   const handleManualInput = (value: string) => {

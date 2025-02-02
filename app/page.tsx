@@ -30,11 +30,12 @@ export default function Home() {
 
   useEffect(() => {
     fetchEscenarios()
-  }, [])
+  }, []) //Added [] to fix the warning
 
-  // Modificamos la función de filtrado para que sea case-insensitive y busque en más campos
   const filteredEscenarios = escenarios.filter((escenario) => {
-    const searchTermLower = searchTerm.toLowerCase()
+    if (!searchTerm.trim()) return true
+
+    const searchTermLower = searchTerm.toLowerCase().trim()
     return (
       escenario.nombre?.toLowerCase().includes(searchTermLower) ||
       escenario.comuna?.toLowerCase().includes(searchTermLower) ||
@@ -44,50 +45,52 @@ export default function Home() {
   })
 
   return (
-    <div className="container mx-auto p-4">
-      <h1 className="text-3xl font-bold text-center mb-8">Inventario Escenarios Comunitarios</h1>
-      <div className="flex justify-between items-center mb-6">
-        <h2 className="text-2xl font-bold">Escenarios Deportivos</h2>
-        <Link href="/nuevo-escenario">
-          <Button>Nuevo Escenario</Button>
-        </Link>
-      </div>
-
-      <div className="mb-6">
-        <Input
-          type="search"
-          placeholder="Buscar por nombre, comuna, barrio o dirección..."
-          className="max-w-md w-full"
-          value={searchTerm}
-          onChange={(e) => setSearchTerm(e.target.value)}
-        />
-      </div>
-
-      {loading ? (
-        <div className="text-center">Cargando escenarios...</div>
-      ) : error ? (
-        <div className="text-center text-red-600">{error}</div>
-      ) : filteredEscenarios.length > 0 ? (
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          {filteredEscenarios.map((escenario) => (
-            <Link
-              href={`/escenario/${escenario.id}`}
-              key={escenario.id}
-              className="block border p-4 rounded-lg hover:bg-gray-50 transition-colors"
-            >
-              <h2 className="text-xl font-semibold mb-2">{escenario.nombre}</h2>
-              <div className="text-sm text-gray-600">
-                <p>Comuna: {escenario.comuna}</p>
-                <p>Dirección: {escenario.direccion}</p>
-                <p>Barrio: {escenario.barrio}</p>
-              </div>
-            </Link>
-          ))}
+    <main className="min-h-screen bg-gray-50">
+      <div className="container mx-auto px-4 py-8">
+        <h1 className="text-3xl font-bold text-center mb-8">Inventario Escenarios Comunitarios</h1>
+        <div className="flex flex-col md:flex-row justify-between items-center mb-6 gap-4">
+          <h2 className="text-2xl font-bold">Escenarios Deportivos</h2>
+          <Link href="/nuevo-escenario">
+            <Button className="w-full md:w-auto">Nuevo Escenario</Button>
+          </Link>
         </div>
-      ) : (
-        <div className="text-center text-gray-500">No se encontraron escenarios</div>
-      )}
-    </div>
+
+        <div className="mb-6">
+          <Input
+            type="search"
+            placeholder="Buscar por nombre, comuna, barrio o dirección..."
+            className="max-w-md w-full mx-auto"
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+          />
+        </div>
+
+        {loading ? (
+          <div className="text-center py-8">Cargando escenarios...</div>
+        ) : error ? (
+          <div className="text-center text-red-600 py-8">{error}</div>
+        ) : filteredEscenarios.length > 0 ? (
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            {filteredEscenarios.map((escenario) => (
+              <Link
+                href={`/escenario/${escenario.id}`}
+                key={escenario.id}
+                className="block bg-white border rounded-lg shadow-sm hover:shadow-md transition-shadow p-6"
+              >
+                <h2 className="text-xl font-semibold mb-2">{escenario.nombre}</h2>
+                <div className="text-sm text-gray-600 space-y-1">
+                  <p>Comuna: {escenario.comuna}</p>
+                  <p>Dirección: {escenario.direccion}</p>
+                  <p>Barrio: {escenario.barrio}</p>
+                </div>
+              </Link>
+            ))}
+          </div>
+        ) : (
+          <div className="text-center text-gray-500 py-8">No se encontraron escenarios</div>
+        )}
+      </div>
+    </main>
   )
 }
 
